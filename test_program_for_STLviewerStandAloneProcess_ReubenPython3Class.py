@@ -6,9 +6,9 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision B, 12/18/2025
+Software Revision C, 01/09/2026
 
-Verified working on: Python 3.11/12 for Windows 10/11 64-bit.
+Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit.
 '''
 
 __author__ = 'reuben.brewer'
@@ -594,7 +594,7 @@ if __name__ == '__main__':
     if USE_STLviewerStandAloneProcess_FLAG == 1:
         if EXIT_PROGRAM_FLAG == 0:
             if STLviewerStandAloneProcess_OPEN_FLAG != 1:
-                print("Failed to open MyPlotterPureTkinterClass_Object.")
+                print("Failed to open STLviewerStandAloneProcess_Object.")
                 ExitProgram_Callback()
     #################################################
     #################################################
