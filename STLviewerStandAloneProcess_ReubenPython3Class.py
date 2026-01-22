@@ -6,7 +6,7 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision C, 01/09/2026
+Software Revision D, 01/21/2026
 
 Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit.
 '''
@@ -42,6 +42,7 @@ from UDPdataExchanger_ReubenPython3Class import *
 ##########################################################################################################
 import os
 import sys
+from pathlib import Path
 import time
 import datetime
 import multiprocessing
@@ -384,12 +385,72 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
 
             ##########################################
             ##########################################
-            if "STLfileFullPath" in SetupDict:
-                self.STLfileFullPath = str(SetupDict["STLfileFullPath"])
-            else:
-                self.STLfileFullPath = "cube.stl"
+            self.STLviewerStandAloneProcess_STLfile_ListOfDicts = []
+            if "STLviewerStandAloneProcess_STLfile_ListOfDicts" in SetupDict:
+                STLviewerStandAloneProcess_STLfile_ListOfDicts_TEMP = SetupDict["STLviewerStandAloneProcess_STLfile_ListOfDicts"]
 
-            if PrintInfoForDebuggingFlag == 1: print("STLviewerStandAloneProcess_ReubenPython3Class __init__, __ProcessVariablesThatCanBeLiveUpdated: STLfileFullPath: " + str(self.STLfileFullPath))
+                if isinstance(STLviewerStandAloneProcess_STLfile_ListOfDicts_TEMP, list) == 1:
+
+                    for ListElement in STLviewerStandAloneProcess_STLfile_ListOfDicts_TEMP:
+
+                        if isinstance(ListElement, dict) == 1:
+
+                            if "EnglishNameNoExtensionStr" in ListElement and "FilepathFull" in ListElement:
+                                EnglishNameNoExtensionStr = str(ListElement["EnglishNameNoExtensionStr"])
+                                FilepathFull = str(ListElement["FilepathFull"])
+
+                                FoundFileInSpecifiedLocationFlag = os.path.isfile(FilepathFull)
+
+                                FoundFileInSpecifiedLocation_LocatedFilepath = self.FindFileWithinParentDirectoryAndAddFullPathToFilename(FilenameToSearchFor=FilepathFull, PrintInfoForDebuggingFlag=1)
+
+                                if FoundFileInSpecifiedLocation_LocatedFilepath!= "":
+                                    FoundFileInParentDirectoryFlag = 1
+                                else:
+                                    FoundFileInParentDirectoryFlag = 0
+
+                                if FoundFileInSpecifiedLocationFlag != 1 and FoundFileInParentDirectoryFlag == 1:
+                                    FilepathFull = FoundFileInSpecifiedLocation_LocatedFilepath
+
+                                if FoundFileInSpecifiedLocationFlag == 1 or FoundFileInParentDirectoryFlag == 1:
+
+                                    if FilepathFull.lower().find(".stl") != -1:
+                                        #dragon
+
+                                        if EnglishNameNoExtensionStr not in self.Models_Dict:
+                                            self.Models_Dict[EnglishNameNoExtensionStr] = deepcopy(self.PerModelTemplateDict)
+
+                                            self.Models_Dict[EnglishNameNoExtensionStr]["EnglishNameNoExtensionStr"] = EnglishNameNoExtensionStr
+                                            self.Models_Dict[EnglishNameNoExtensionStr]["FilepathFull"] = FilepathFull
+
+                                        else:
+                                            print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, detected duplicate key in self.Models_Dict for EnglishNameNoExtensionStr = " + str(EnglishNameNoExtensionStr))
+                                            return 0
+
+                                    else:
+                                        print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, FilepathFull must contain the extension '.stl' for: " + str(FilepathFull))
+                                        return 0
+
+                                else:
+                                    print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, double-check that file exists for: " + str(FilepathFull))
+                                    return 0
+
+                            else:
+                                print("STLviewerStandAloneProcess_ReubenPython3Class __init__: the dicts within STLviewerStandAloneProcess_STLfile_ListOfDicts must contain the keys 'EnglishNameNoExtensionStr and 'FilepathFull'.")
+                                return 0
+
+                        else:
+                            print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, STLviewerStandAloneProcess_STLfile_ListOfDicts must be a list of dicts.")
+                            return 0
+
+                else:
+                    print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, STLviewerStandAloneProcess_STLfile_ListOfDicts must be a list (of dicts).")
+                    return 0
+
+            else:
+                print("STLviewerStandAloneProcess_ReubenPython3Class __init__: Error, STLviewerStandAloneProcess_STLfile_ListOfDicts must be part of SetupDict.")
+                return 0
+
+            if PrintInfoForDebuggingFlag == 1: print("STLviewerStandAloneProcess_ReubenPython3Class __init__, __ProcessVariablesThatCanBeLiveUpdated: STLviewerStandAloneProcess_STLfile_ListOfDicts: " + str(self.STLviewerStandAloneProcess_STLfile_ListOfDicts))
             ##########################################
             ##########################################
 
@@ -554,7 +615,7 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
         except:
             exceptions = sys.exc_info()[0]
             print("STLviewerStandAloneProcess_ReubenPython3Class __init__, __ProcessVariablesThatCanBeLiveUpdated: exceptions: %s" % exceptions)
-            #traceback.print_exc()
+            traceback.print_exc()
             return 0
         ##########################################################################################################
         ##########################################################################################################
@@ -696,6 +757,184 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
+    def FindFileWithinParentDirectoryAndAddFullPathToFilename(self, FilenameToSearchFor, ReturnAllMatchesFlag=0, PrintInfoForDebuggingFlag=0):
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        try:
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            HelperFile = Path(__file__).resolve()
+            HelperDir = HelperFile.parent
+
+            PythonPrefixDir = Path(sys.prefix).resolve()  # e.g. C:\Anaconda3
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            # Find the "real" caller file:
+            # - not this helper module
+            # - not inside the Python installation folder (sys.prefix)
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            CallerFile = None
+
+            for FrameInfo in inspect.stack():
+                FrameFile = Path(FrameInfo.filename).resolve()
+
+                # Skip this helper module
+                if FrameFile == HelperFile:
+                    continue
+
+                # Skip anything inside Python install (multiprocessing, stdlib, site-packages, etc.)
+                # Example: C:\Anaconda3\Lib\multiprocessing\process.py
+                if str(FrameFile).startswith(str(PythonPrefixDir)):
+                    continue
+
+                # This is likely your real script (EngineeringGUI.py)
+                CallerFile = FrameFile
+                break
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ########################################################################################################## If we still couldn't find it, fall back to cwd
+            ##########################################################################################################
+            ##########################################################################################################
+            CallerDir = CallerFile.parent if CallerFile else Path.cwd()
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            if PrintInfoForDebuggingFlag == 1:
+                print("FindFileWithinParentDirectoryAndAddFullPathToFilename: Helper module:", HelperFile,
+                      ", PythonPrefixDir:", PythonPrefixDir,
+                      ", Caller file:", CallerFile,
+                      ", Caller search root:", CallerDir,
+                      ", Helper fallback root:", HelperDir,
+                      ", ReturnAllMatchesFlag:", ReturnAllMatchesFlag)
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            def FindMatchesUnderRoot(RootDirToSearch):
+                Matches = [p.resolve() for p in RootDirToSearch.rglob(FilenameToSearchFor)]
+                return Matches
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ########################################################################################################## Search caller tree first
+            ##########################################################################################################
+            ##########################################################################################################
+            CallerMatches = FindMatchesUnderRoot(CallerDir)
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            if len(CallerMatches) > 0:
+                if PrintInfoForDebuggingFlag == 1:
+                    print(f"Found {len(CallerMatches)} match(es) in caller tree.")
+                    for m in CallerMatches:
+                        print("  ", m)
+
+                if ReturnAllMatchesFlag == 1:
+                    return [str(m) for m in CallerMatches]
+
+                Hit = CallerMatches[0]
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            else:
+
+                if PrintInfoForDebuggingFlag == 1: print(f"Not found in caller tree: {FilenameToSearchFor}")
+
+                ######################################################################################################
+                # Helper fallback search (ONLY if not found in caller tree)
+                ######################################################################################################
+                HelperMatches = FindMatchesUnderRoot(HelperDir)
+
+                if len(HelperMatches) == 0:
+                    if PrintInfoForDebuggingFlag == 1:
+                        print(f"Not found in helper fallback tree: {FilenameToSearchFor}")
+                    return [] if ReturnAllMatchesFlag == 1 else ""
+
+                if PrintInfoForDebuggingFlag == 1:
+                    print(f"Found {len(HelperMatches)} match(es) in helper fallback tree.")
+                    for m in HelperMatches:
+                        print("  ", m)
+
+                if ReturnAllMatchesFlag == 1:
+                    return [str(m) for m in HelperMatches]
+
+                Hit = HelperMatches[0]
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+            sys.path.insert(0, str(Hit.parent)) #Update Python's path (only when returning a single path)
+
+            if PrintInfoForDebuggingFlag == 1: print("FindFileWithinParentDirectoryAndAddFullPathToFilename: Final Found (first match):", Hit)
+
+            return str(Hit)
+            ##########################################################################################################
+            ##########################################################################################################
+            ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        except Exception as e:
+            if PrintInfoForDebuggingFlag == 1: print("FindFileWithinParentDirectoryAndAddFullPathToFilename, Exception:", e)
+            #traceback.print_exc()
+            return [] if ReturnAllMatchesFlag == 1 else ""
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+
+    ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
+
+    ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
+    ##########################################################################################################
     def WatchdogTimerCheck(self):
 
         #############################################
@@ -725,6 +964,18 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
         ##########################################
         self.EXIT_PROGRAM_FLAG = 0
         self.GUI_ready_to_be_updated_flag = 0
+        ##########################################
+
+        ##########################################
+        self.Models_Dict = dict()
+
+        self.PerModelTemplateDict = dict([("EnglishNameNoExtensionStr", ""),
+                                            ("FilepathFull", ""),
+                                            ("VertexCount", 0),
+                                            ("ModernGL_VertexBufferObject_VBO", None),
+                                            ("ModernGL_VertexArrayObject_VAO", None),
+                                            ("TranslationList", [0, 0, 0]),
+                                            ("QuaternionListWXYZ", [1, 0, 0, 0])])
         ##########################################
 
         ##########################################################################################################
@@ -805,10 +1056,6 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
         ##########################################
 
         ##########################################
-        self.Quaternion = [0, 0, 0, 1]
-        ##########################################
-
-        ##########################################
         self.MostRecentDataDict = dict()
         ##########################################
 
@@ -860,7 +1107,7 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
         ##########################################################################################################
         ##########################################################################################################
 
-        ########################################################################################################## unicorn
+        ##########################################################################################################
         ##########################################################################################################
         ##########################################################################################################
         ##########################################################################################################
@@ -975,7 +1222,7 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                 ##########################################################################################################
                 ##########################################################################################################
 
-                ##########################################################################################################
+                ########################################################################################################## unicorn
                 ##########################################################################################################
                 ##########################################################################################################
                 if self.UDPdataExchanger_OPEN_FLAG == 1:
@@ -985,8 +1232,11 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                         #print("self.UDPdataExchanger_MostRecentDict: " + str(self.UDPdataExchanger_MostRecentDict))
 
                         if "MostRecentMessage_Rx_Dict" in self.UDPdataExchanger_MostRecentDict:
-                            if "Quaternion" in self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]:
-                                self.Quaternion = self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]["Quaternion"]
+                            if "EnglishNameNoExtensionStr" in self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"] and "TranslationList" in self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"] and "QuaternionListWXYZ" in self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]:
+                                self.SetModelPose(EnglishNameNoExtensionStr=self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]["EnglishNameNoExtensionStr"],
+                                                    TranslationList=self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]["TranslationList"],
+                                                    QuaternionListWXYZ=self.UDPdataExchanger_MostRecentDict["MostRecentMessage_Rx_Dict"]["QuaternionListWXYZ"],
+                                                    PrintInfoForDebuggingFlag=0)
 
                     except:
                         exceptions = sys.exc_info()[0]
@@ -1037,9 +1287,11 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                         ##########################################################################################################
                         else: #MAIN DATA PLOTTING CALL
 
-                            if "Quaternion" in inputDict:
-
-                                self.Quaternion = inputDict["Quaternion"]
+                            if "QuaternionListWXYZ" in inputDict:
+                                self.SetModelPose(EnglishNameNoExtensionStr=inputDict["EnglishNameNoExtensionStr"],
+                                                  TranslationList=inputDict["TranslationList"],
+                                                  QuaternionListWXYZ=inputDict["QuaternionListWXYZ"],
+                                                  PrintInfoForDebuggingFlag=0)
 
                         ##########################################################################################################
 
@@ -1210,18 +1462,36 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
-    def ExternalUpdateRotationQuaternion(self, Quaternion):
-
-        if isinstance(Quaternion, list) != 1:
-           print("ExternalUpdateRotationQuaternion: Error, input must be a list.")
-           return
-
-        if len(Quaternion) != 4:
-            print("ExternalUpdateRotationQuaternion: Error, input must be a list of length 4.")
-            return
+    def ExternalUpdatePose(self, EnglishNameNoExtensionStr, TranslationList, QuaternionListWXYZ, PrintInfoForDebuggingFlag=0):
 
         ###########################################
-        self.MultiprocessingQueue_Rx.put(dict([("Quaternion", Quaternion)]))
+        if isinstance(TranslationList, list) != 1:
+           print("ExternalUpdatePose: Error, TranslationList must be a list.")
+           return
+        ###########################################
+
+        ###########################################
+        if len(TranslationList) != 3:
+            print("ExternalUpdatePose: Error, TranslationList must be a list of length 3.")
+            return
+        ###########################################
+
+        ###########################################
+        if isinstance(QuaternionListWXYZ, list) != 1:
+           print("ExternalUpdatePose: Error, QuaternionListWXYZ must be a list.")
+           return
+        ###########################################
+
+        ###########################################
+        if len(QuaternionListWXYZ) != 4:
+            print("ExternalUpdatePose: Error, QuaternionListWXYZ must be a list of length 4.")
+            return
+        ###########################################
+
+        ###########################################
+        self.MultiprocessingQueue_Rx.put(dict([("EnglishNameNoExtensionStr", EnglishNameNoExtensionStr), ("TranslationList", TranslationList), ("QuaternionListWXYZ", QuaternionListWXYZ)]))
+
+        if PrintInfoForDebuggingFlag == 1: print("ExternalUpdatePose: event fired for EnglishNameNoExtensionStr = " + str(EnglishNameNoExtensionStr) + ", TranslationList, =" + str(TranslationList) + ", QuaternionListWXYZ = " + str(QuaternionListWXYZ))
         ###########################################
 
     ##########################################################################################################
@@ -1253,14 +1523,19 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     def Quaternion_Normalize(self, q):
 
-        w, x, y, z = q
-        m = math.sqrt(w * w + x * x + y * y + z * z)
+        try:
+            w, x, y, z = q
+            m = math.sqrt(w * w + x * x + y * y + z * z)
 
-        if m == 0:
-            return (1, 0, 0, 0)
+            if m == 0:
+                return (1, 0, 0, 0)
 
-        return (w / m, x / m, y / m, z / m)
+            return (w / m, x / m, y / m, z / m)
 
+        except:
+            exceptions = sys.exc_info()[0]
+            print("Quaternion_Normalize, exceptions: %s" % exceptions)
+            traceback.print_exc()
     ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
@@ -1272,16 +1547,22 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     def Quaterionion_FromAxisAngleRepresentation(self, axis, angle):
 
-        ax, ay, az = axis
-        n = math.sqrt(ax * ax + ay * ay + az * az)
+        try:
+            ax, ay, az = axis
+            n = math.sqrt(ax * ax + ay * ay + az * az)
 
-        if n == 0:
-            return (1, 0, 0, 0)
+            if n == 0:
+                return (1, 0, 0, 0)
 
-        ax, ay, az = ax / n, ay / n, az / n
-        s = math.sin(angle / 2)
+            ax, ay, az = ax / n, ay / n, az / n
+            s = math.sin(angle / 2)
 
-        return (math.cos(angle / 2), ax * s, ay * s, az * s)
+            return (math.cos(angle / 2), ax * s, ay * s, az * s)
+
+        except:
+            exceptions = sys.exc_info()[0]
+            print("Quaterionion_FromAxisAngleRepresentation, exceptions: %s" % exceptions)
+            traceback.print_exc()
 
     ##########################################################################################################
     ##########################################################################################################
@@ -1335,9 +1616,9 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
-    def LoadSTLfileAndSmoothNormals(self):
+    def LoadSTLfileAndSmoothNormals(self, FilepathFull):
 
-        m = mesh.Mesh.from_file(self.STLfileFullPath)
+        m = mesh.Mesh.from_file(FilepathFull)
         verts = m.vectors.reshape(-1, 3).astype(numpy.float32)
 
         # Smooth normals
@@ -1369,8 +1650,10 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
 
         # Interleave
         inter = numpy.hstack([verts, norms]).astype(numpy.float32)
-        self.ModernGL_VertexBufferObject_VBO = self.ModernGL_Context.buffer(inter.tobytes())
-        self.vertex_count = len(verts)
+        ModernGL_VertexBufferObject_VBO = self.ModernGL_Context.buffer(inter.tobytes())
+        VertexCount = len(verts)
+
+        return ModernGL_VertexBufferObject_VBO, VertexCount
         
     ##########################################################################################################
     ##########################################################################################################
@@ -1401,6 +1684,7 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                 in vec3 in_pos;
                 in vec3 in_normal;
 
+                uniform vec3 TranslationOfModel;
                 uniform vec4 QuaternionOfModel;
                 uniform vec4 QuaternionOfView;
                 uniform mat4 ProjectionMatrix;
@@ -1428,7 +1712,8 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                 void main() {
                     vec4 q = normalize(Quaternion_MultiplyViaHamiltonProduct(QuaternionOfView, QuaternionOfModel));
 
-                    vec3 p = quat_rot(in_pos,    q);
+                    vec3 t = quat_rot(TranslationOfModel, QuaternionOfView);
+                    vec3 p = quat_rot(in_pos, q) + quat_rot(TranslationOfModel, QuaternionOfView);
                     vec3 n = quat_rot(in_normal, q);
 
                     v_world  = p;
@@ -1459,13 +1744,30 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
             """
         )
 
-        self.QuaternionOfModel_uniform = self.ModernGL_Program["QuaternionOfModel"]
-        self.QuaternionOfView_uniform = self.ModernGL_Program["QuaternionOfView"]
-        self.ProjectionMatrix_uniform = self.ModernGL_Program["ProjectionMatrix"]
-        self.ViewMatrix_uniform = self.ModernGL_Program["ViewMatrix"]
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        try:
 
-        self.QuaternionOfModel_uniform.value = self.QuaternionOfModel
-        self.QuaternionOfView_uniform.value = self.QuaternionOfView
+            self.QuaternionOfView_uniform = self.ModernGL_Program["QuaternionOfView"]
+            self.ProjectionMatrix_uniform = self.ModernGL_Program["ProjectionMatrix"]
+            self.ViewMatrix_uniform = self.ModernGL_Program["ViewMatrix"]
+
+            self.QuaternionOfView_uniform.value = self.QuaternionOfView
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        except:
+            exceptions = sys.exc_info()[0]
+            print("CreateProgram, exceptions: %s" % exceptions)
+            traceback.print_exc()
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
 
         # ---------------------------------------------------------
         # AXES PROGRAM (simple colored lines)
@@ -1526,7 +1828,8 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     def CreateVertexArrayObject(self):
 
-        self.ModernGL_VertexArrayObject_VAO = self.ModernGL_Context.vertex_array(self.ModernGL_Program, [(self.ModernGL_VertexBufferObject_VBO, "3f4 3f4", "in_pos", "in_normal")])
+        for EnglishNameNoExtensionStr in self.Models_Dict:
+            self.Models_Dict[EnglishNameNoExtensionStr]["ModernGL_VertexArrayObject_VAO"] = self.ModernGL_Context.vertex_array(self.ModernGL_Program, [(self.Models_Dict[EnglishNameNoExtensionStr]["ModernGL_VertexBufferObject_VBO"], "3f4 3f4", "in_pos", "in_normal")])
         
     ##########################################################################################################
     ##########################################################################################################
@@ -1586,32 +1889,92 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
     ##########################################################################################################
     ##########################################################################################################
 
+    ########################################################################################################## PUBLIC API: SET MODEL QUATERNION
     ##########################################################################################################
     ##########################################################################################################
     ##########################################################################################################
-    ##########################################################################################################
-    # ---------------------------------------------------------
-    # PUBLIC API: SET MODEL QUATERNION
-    # ---------------------------------------------------------
+    def SetModelPose(self, EnglishNameNoExtensionStr, TranslationList=[0.0,0.0,0.0], QuaternionListWXYZ=[1.0, 0.0, 0.0, 0.0], PrintInfoForDebuggingFlag=0):
 
-    def SetModelQuaternion(self, QuaternionListWXYZ=[1.0, 0.0, 0.0, 0.0]):
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        try:
 
-        if isinstance(QuaternionListWXYZ, list) != 1:
-            print("SetModelQuaternion: Error, QuaternionListWXYZ must be a list.")
-            return
+            if self.GUI_ready_to_be_updated_flag == 1:
 
-        if len(QuaternionListWXYZ) != 4:
-            print("SetModelQuaternion: Error, QuaternionListWXYZ must be a list of length 4.")
-            return
+                ##########################################################################################################
+                ##########################################################################################################
+                if isinstance(TranslationList, list) != 1:
+                    print("SetModelPose: Error, TranslationList must be a list.")
+                    return 0
+                ##########################################################################################################
+                ##########################################################################################################
 
-        w = QuaternionListWXYZ[0]
-        x = QuaternionListWXYZ[1]
-        y = QuaternionListWXYZ[2]
-        z = QuaternionListWXYZ[3]
+                ##########################################################################################################
+                ##########################################################################################################
+                if len(TranslationList) != 3:
+                    print("SetModelPose: Error, TranslationList must be a list of length 3.")
+                    return 0
+                ##########################################################################################################
+                ##########################################################################################################
 
-        q = self.Quaternion_Normalize((w, x, y, z))
-        self.QuaternionOfModel = q
-        self.QuaternionOfModel_uniform.value = q
+                ##########################################################################################################
+                ##########################################################################################################
+                if isinstance(QuaternionListWXYZ, list) != 1:
+                    print("SetModelPose: Error, QuaternionListWXYZ must be a list.")
+                    return 0
+                ##########################################################################################################
+                ##########################################################################################################
+
+                ##########################################################################################################
+                ##########################################################################################################
+                if len(QuaternionListWXYZ) != 4:
+                    print("SetModelPose: Error, QuaternionListWXYZ must be a list of length 4.")
+                    return 0
+                ##########################################################################################################
+                ##########################################################################################################
+
+                ##########################################################################################################
+                ##########################################################################################################
+                w = QuaternionListWXYZ[0]
+                x = QuaternionListWXYZ[1]
+                y = QuaternionListWXYZ[2]
+                z = QuaternionListWXYZ[3]
+
+                q = self.Quaternion_Normalize((w, x, y, z))
+                ##########################################################################################################
+                ##########################################################################################################
+
+                ##########################################################################################################
+                ##########################################################################################################
+                if EnglishNameNoExtensionStr in self.Models_Dict:
+                    self.Models_Dict[EnglishNameNoExtensionStr]["TranslationList"] = TranslationList
+
+                    self.Models_Dict[EnglishNameNoExtensionStr]["QuaternionListWXYZ"] = q
+                    if PrintInfoForDebuggingFlag == 1: print("SetModelPose event fired for EnglishNameNoExtensionStr = " + str(EnglishNameNoExtensionStr) + ", TranslationList = " + str(TranslationList) + ", QuaternionListWXYZ = " + str(QuaternionListWXYZ) + ", q = " + str(q))
+                    return 1
+
+                else:
+                    print("SetModelPose: Error, EnglishNameNoExtensionStr = " + str(EnglishNameNoExtensionStr) + " is not a valid in self.Models_Dict = " + str(self.Models_Dict))
+                    return 0
+                ##########################################################################################################
+                ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
+        except:
+            exceptions = sys.exc_info()[0]
+            print("SetModelPose, exceptions: %s" % exceptions)
+            traceback.print_exc()
+            return 0
+        ##########################################################################################################
+        ##########################################################################################################
+        ##########################################################################################################
 
     ##########################################################################################################
     ##########################################################################################################
@@ -2095,36 +2458,49 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
         ##########################################################################################################
         ##########################################################################################################
 
-        # Model + view rotation
-        self.QuaternionOfModel = (1, 0, 0, 0)
+        ##########################################################################################################
+        self._photo = None
         self.QuaternionOfView = (1, 0, 0, 0)
+        ##########################################################################################################
 
-        # Camera
+        ########################################################################################################## Camera
         self.yaw = 0.0
         self.pitch = 0.0
         self.dist = 4.0  # camera distance
+        ##########################################################################################################
 
-        # Mouse tracking
+        ########################################################################################################## Mouse tracking
         self._last_x = None
         self._last_y = None
+        ##########################################################################################################
 
-        # ModernGL setup
+        ########################################################################################################## ModernGL setup
         self.ModernGL_Context = moderngl.create_standalone_context()
         self.ModernGL_Context.enable(moderngl.DEPTH_TEST)  # <-- CRITICAL: enable depth test
         self.ModernGL_Context.disable(moderngl.CULL_FACE)  # draw both sides
 
         self.ModernGL_FrameBufferObject_FBO = self.ModernGL_Context.simple_framebuffer((self.GraphCanvasWidth, self.GraphCanvasHeight))
         self.ModernGL_FrameBufferObject_FBO.use()
+        ##########################################################################################################
 
-        # Geometry + GPU objects
-        self.LoadSTLfileAndSmoothNormals()
+        ########################################################################################################## Geometry + GPU objects
+        for EnglishNameNoExtensionStr in self.Models_Dict:
+            FilepathFull = self.Models_Dict[EnglishNameNoExtensionStr]["FilepathFull"]
+            ModernGL_VertexBufferObject_VBO, VertexCount = self.LoadSTLfileAndSmoothNormals(FilepathFull)
+
+            self.Models_Dict[EnglishNameNoExtensionStr]["ModernGL_VertexBufferObject_VBO"] = ModernGL_VertexBufferObject_VBO
+            self.Models_Dict[EnglishNameNoExtensionStr]["VertexCount"] = VertexCount
+
+        print("self.Models_Dict: " + str(self.Models_Dict))
+        ##########################################################################################################
+
+        ##########################################################################################################
         self.CreateProgram()
         self.CreateVertexArrayObject()
-
-        self._photo = None
-
         self.CreateAxes()
         self.CreateGrid()
+        ##########################################################################################################
+
         ##########################################################################################################
         ##########################################################################################################
         ##########################################################################################################
@@ -2342,8 +2718,6 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                     ########################################################################################################## unicorn
                     ##########################################################################################################
                     ##########################################################################################################
-                    self.SetModelQuaternion(self.Quaternion)
-
                     self.ModernGL_FrameBufferObject_FBO.use()
                     self.ModernGL_Context.clear(0.1, 0.1, 0.1, 1.0)  # clears color + depth
 
@@ -2362,7 +2736,10 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                     self.ModernGL_VertexArrayObject_VAO_Axes.render(mode=moderngl.LINES)
                     self.ModernGL_Context.enable(moderngl.DEPTH_TEST)
 
-                    self.ModernGL_VertexArrayObject_VAO.render()
+                    for EnglishNameNoExtensionStr in self.Models_Dict:
+                        self.ModernGL_Program["TranslationOfModel"].value = self.Models_Dict[EnglishNameNoExtensionStr]["TranslationList"]
+                        self.ModernGL_Program["QuaternionOfModel"].value = self.Models_Dict[EnglishNameNoExtensionStr]["QuaternionListWXYZ"] #There's only a single self.ModernGL_Program["QuaternionOfModel"], and it must be updated for each STL files new quaternion and then rendered
+                        self.Models_Dict[EnglishNameNoExtensionStr]["ModernGL_VertexArrayObject_VAO"].render()
 
                     data = self.ModernGL_FrameBufferObject_FBO.read(components=3)
                     img = Image.frombytes("RGB", (self.GraphCanvasWidth, self.GraphCanvasHeight), data)
@@ -2390,7 +2767,6 @@ class STLviewerStandAloneProcess_ReubenPython3Class(Frame):  # Subclass the Tkin
                                                 ", MEM %: " + str(self.MemoryUsageOfProcessByPID_Dict["MemoryUsage_Percent"]) + \
                                                 ", #: " + str(len(self.CanvasForDrawingGraph.find_all())) + \
                                                 ", Watchdog: " + self.ConvertFloatToStringWithNumberOfLeadingNumbersAndDecimalPlaces_NumberOrListInput(self.TimeIntoWatchdogTimer, 0, 3) + \
-                                                ", Quaternion: " + self.ConvertFloatToStringWithNumberOfLeadingNumbersAndDecimalPlaces_NumberOrListInput(self.Quaternion, 0, 3) +\
                                                 "\nUDP: "
                     ##########################################################################################################
                     ##########################################################################################################

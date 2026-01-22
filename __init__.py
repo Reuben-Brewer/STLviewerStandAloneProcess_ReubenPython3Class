@@ -6,7 +6,7 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision C, 01/09/2026
+Software Revision D, 01/21/2026
 
 Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit.
 '''
@@ -16,7 +16,7 @@ Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit.
 #######################################################################################################################
 #######################################################################################################################
 __author__ = 'reuben.brewer'
-__version__ = "Software Revision C, 01/09/2026"
+__version__ = "Software Revision D, 01/21/2026"
 
 from .STLviewerStandAloneProcess_ReubenPython3Class import STLviewerStandAloneProcess_ReubenPython3Class
 

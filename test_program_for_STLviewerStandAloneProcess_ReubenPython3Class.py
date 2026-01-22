@@ -6,7 +6,7 @@ reuben.brewer@gmail.com
 www.reubotics.com
 
 Apache 2 License
-Software Revision C, 01/09/2026
+Software Revision D, 01/21/2026
 
 Verified working on: Python 3.11/12/13 for Windows 10/11 64-bit.
 '''
@@ -491,6 +491,36 @@ if __name__ == '__main__':
 
     global PeriodicInput_CalculatedValue_1
     PeriodicInput_CalculatedValue_1 = 0.0
+    
+    global PeriodicInput_Type_2
+    PeriodicInput_Type_2 = "Sine"
+
+    global PeriodicInput_MinValue_2
+    PeriodicInput_MinValue_2 = -45.0
+
+    global PeriodicInput_MaxValue_2
+    PeriodicInput_MaxValue_2 = 45.0
+
+    global PeriodicInput_Period_2
+    PeriodicInput_Period_2 = 1.0
+
+    global PeriodicInput_CalculatedValue_2
+    PeriodicInput_CalculatedValue_2 = 0.0
+
+    global PeriodicInput_Type_3
+    PeriodicInput_Type_3 = "Sine"
+
+    global PeriodicInput_MinValue_3
+    PeriodicInput_MinValue_3 = -2.0
+
+    global PeriodicInput_MaxValue_3
+    PeriodicInput_MaxValue_3 = 2.0
+
+    global PeriodicInput_Period_3
+    PeriodicInput_Period_3 = 5.0
+
+    global PeriodicInput_CalculatedValue_3
+    PeriodicInput_CalculatedValue_3 = 0.0
 
     global ResetMinAndMax_EventNeedsToBeFiredFlag
     ResetMinAndMax_EventNeedsToBeFiredFlag = 0
@@ -535,7 +565,7 @@ if __name__ == '__main__':
     UDPdataExchanger___IPV4_Port = 7
 
     global UDPdataExchanger___UDP_BufferSizeInBytes
-    UDPdataExchanger___UDP_BufferSizeInBytes = 100
+    UDPdataExchanger___UDP_BufferSizeInBytes = 150
 
     global UDPdataExchanger___UDP_TimeoutAtPortLevelInSeconds #FOR INDIVIDUAL BYTES ON THE UDP PORT, NOT FOR ENTIRE MESSAGES (LIKE THE WATCHDOG)
     UDPdataExchanger___UDP_TimeoutAtPortLevelInSeconds = 0.1
@@ -555,6 +585,14 @@ if __name__ == '__main__':
 
     #################################################
     #################################################
+
+    global STLviewerStandAloneProcess_STLfile_ListOfDicts
+    STLviewerStandAloneProcess_STLfile_ListOfDicts = [dict([("EnglishNameNoExtensionStr", "1"),
+                                                            ("FilepathFull", "bunny.stl")]),
+
+                                                       dict([("EnglishNameNoExtensionStr", "2"),
+                                                             ("FilepathFull", "teapot.stl")])]
+
     global STLviewerStandAloneProcess_GUIparametersDict
     STLviewerStandAloneProcess_GUIparametersDict = dict([("EnableInternal_MyPrint_Flag", 1),
                                                         ("NumberOfPrintLines", 10),
@@ -567,7 +605,7 @@ if __name__ == '__main__':
 
     global STLviewerStandAloneProcess_SetupDict
     STLviewerStandAloneProcess_SetupDict = dict([("GUIparametersDict", STLviewerStandAloneProcess_GUIparametersDict),
-                                                ("STLfileFullPath", "teapot.stl"), #teapot, bunny, cube
+                                                ("STLviewerStandAloneProcess_STLfile_ListOfDicts", STLviewerStandAloneProcess_STLfile_ListOfDicts),
                                                 ("ParentPID", os.getpid()),
                                                 ("WatchdogTimerDurationSeconds_ExpirationWillEndStandAlonePlottingProcess", 5.0),
                                                 ("UDPdataExchanger___IPV4_address", UDPdataExchanger___IPV4_address),
@@ -706,6 +744,18 @@ if __name__ == '__main__':
                                                                 PeriodicInput_MaxValue_1,
                                                                 PeriodicInput_Period_1, 
                                                                 PeriodicInput_Type_1)
+        
+        PeriodicInput_CalculatedValue_2 = GetLatestWaveformValue(CurrentTime_CalculatedFromMainThread, 
+                                                                PeriodicInput_MinValue_2,
+                                                                PeriodicInput_MaxValue_2,
+                                                                PeriodicInput_Period_2, 
+                                                                PeriodicInput_Type_2)
+        
+        PeriodicInput_CalculatedValue_3 = GetLatestWaveformValue(CurrentTime_CalculatedFromMainThread, 
+                                                                PeriodicInput_MinValue_3,
+                                                                PeriodicInput_MaxValue_3,
+                                                                PeriodicInput_Period_3, 
+                                                                PeriodicInput_Type_3)
         #################################################
         #################################################
 
@@ -736,12 +786,18 @@ if __name__ == '__main__':
                     if STLviewerStandAloneProcess_MostRecentDict_StandAlonePlottingProcess_ReadyForWritingFlag == 1:
                         if CurrentTime_CalculatedFromMainThread - LastTime_CalculatedFromMainThread_STLviewerStandAloneProcess >= STLviewerStandAloneProcess_GUIparametersDict["GUI_RootAfterCallbackInterval_Milliseconds_IndependentOfParentRootGUIloopEvents"]/1000.0 + 0.001:
 
-                            QuaternionToApply = quat_from_axis_angle_deg([0, 0, 1], PeriodicInput_CalculatedValue_1)
+                            TranslationToApply_1 = [PeriodicInput_CalculatedValue_3, 0, 0]
+                            TranslationToApply_2 = [0, 0, PeriodicInput_CalculatedValue_3]
+
+                            QuaternionToApply_1 = quat_from_axis_angle_deg([0, 0, 1], PeriodicInput_CalculatedValue_1)
+                            QuaternionToApply_2 = quat_from_axis_angle_deg([0, 1, 0], PeriodicInput_CalculatedValue_2)
 
                             if UDPdataExchanger_OPEN_FLAG == 1:
-                                UDPdataExchanger_Object.SendDictFromExternalProgram(dict([("Time", CurrentTime_CalculatedFromMainThread), ("Quaternion", QuaternionToApply)]))
+                                UDPdataExchanger_Object.SendDictFromExternalProgram(dict([("Time", CurrentTime_CalculatedFromMainThread), ("EnglishNameNoExtensionStr", "1"), ("TranslationList", TranslationToApply_1), ("QuaternionListWXYZ", QuaternionToApply_1)]))
+                                UDPdataExchanger_Object.SendDictFromExternalProgram(dict([("Time", CurrentTime_CalculatedFromMainThread), ("EnglishNameNoExtensionStr", "2"), ("TranslationList", TranslationToApply_2), ("QuaternionListWXYZ", QuaternionToApply_2)]))
                             else:
-                                STLviewerStandAloneProcess_Object.ExternalUpdateRotationQuaternion(QuaternionToApply)
+                                STLviewerStandAloneProcess_Object.ExternalUpdatePose(EnglishNameNoExtensionStr="1", TranslationList=TranslationToApply_1, QuaternionListWXYZ=QuaternionToApply_1, PrintInfoForDebuggingFlag=0)
+                                STLviewerStandAloneProcess_Object.ExternalUpdatePose(EnglishNameNoExtensionStr="2", TranslationList=TranslationToApply_2, QuaternionListWXYZ=QuaternionToApply_2, PrintInfoForDebuggingFlag=0)
 
                             LastTime_CalculatedFromMainThread_STLviewerStandAloneProcess = CurrentTime_CalculatedFromMainThread
             #################################################
